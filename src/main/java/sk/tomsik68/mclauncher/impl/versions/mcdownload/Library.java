@@ -84,6 +84,9 @@ final class Library {
                 osName = Platform.wrapName(osName);
             result = result.append('-').append(natives.get(osName));
         }
+        if(getName().startsWith("net.minecraftforge:forge:")){
+			result = result.append("-universal");
+		}
         result = result.append(".jar");
         return libraryPathSubstitutor.substitute(result.toString());
     }

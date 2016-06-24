@@ -117,9 +117,7 @@ public final class YDLoginService implements ILoginService {
         JSONObject obj = new JSONObject();
         if (file.exists()) {
             MCLauncherAPI.log.fine("The file already exists. YDLoginService won't overwrite client token.");
-            FileReader fileReader = new FileReader(file);
-            obj = (JSONObject) JSONValue.parse(fileReader);
-            fileReader.close();
+            obj = (JSONObject) JSONValue.parse(new FileReader(file));
             if (obj.containsKey("clientToken"))
                 return;
             file.delete();
@@ -140,9 +138,7 @@ public final class YDLoginService implements ILoginService {
     }
 
     public void loadFrom(File file) throws Exception {
-        FileReader fileReader = new FileReader(file);
-        JSONObject obj = (JSONObject) JSONValue.parse(fileReader);
-        fileReader.close();
+        JSONObject obj = (JSONObject) JSONValue.parse(new FileReader(file));
         clientToken = UUID.fromString(obj.get("clientToken").toString());
         MCLauncherAPI.log.fine("Loaded client token: " + clientToken.toString());
     }

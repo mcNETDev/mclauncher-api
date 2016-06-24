@@ -12,189 +12,217 @@ import sk.tomsik68.mclauncher.impl.versions.mcdownload.Rule.Action;
 import java.util.ArrayList;
 import java.util.List;
 
-final class MCDownloadVersion implements IVersion, IJSONSerializable {
-    private static final MCDownloadVersionInstaller installer = new MCDownloadVersionInstaller();
-    private static final IVersionLauncher launcher = new MCDownloadVersionLauncher();
-    private static final String DEFAULT_ASSETS_INDEX = "legacy";
+class MCDownloadVersion implements IVersion, IJSONSerializable {
+	private static final MCDownloadVersionInstaller installer = new MCDownloadVersionInstaller();
+	private static final IVersionLauncher launcher = new MCDownloadVersionLauncher();
+	private static final String DEFAULT_ASSETS_INDEX = "legacy";
 
-    private String id, time, releaseTime, type, minecraftArgs, mainClass, jarVersion;
-    private int minimumLauncherVersion;
-    private final JSONObject json;
-    private String incompatibilityReason, processArgs, assets, inheritsFrom;
-    private ArrayList<Rule> rules = new ArrayList<Rule>();
-    private ArrayList<Library> libraries = new ArrayList<Library>();
+	String id;
+	private String time, releaseTime, type, minecraftArgs, mainClass, jarVersion;
+	private boolean forge;
+	private int minimumLauncherVersion;
+	private final JSONObject json;
+	private String incompatibilityReason, processArgs, assets, inheritsFrom;
+	private ArrayList<Rule> rules = new ArrayList<Rule>();
+	private ArrayList<Library> libraries = new ArrayList<Library>();
 
-    private boolean needsInheritance;
+	private boolean needsInheritance;
 
-    MCDownloadVersion(JSONObject json) {
-        this.json = json;
-        id = json.get("id").toString();
-        if(json.containsKey("jar")) {
-            jarVersion = json.get("jar").toString();
-        } else {
-            jarVersion = id;
-        }
-        time = json.get("time").toString();
-        releaseTime = json.get("releaseTime").toString();
-        type = json.get("type").toString();
-        if (json.containsKey("processArguments"))
-            processArgs = json.get("processArguments").toString();
-        minecraftArgs = json.get("minecraftArguments").toString();
-        minimumLauncherVersion = Integer.parseInt(json.get("minimumLauncherVersion").toString());
-        mainClass = json.get("mainClass").toString();
-        if (json.containsKey("assets"))
-            assets = json.get("assets").toString();
-        else
-            assets = DEFAULT_ASSETS_INDEX;
-        if (json.containsKey("rules")) {
-            JSONArray rulesArray = (JSONArray) json.get("rules");
-            for (Object o : rulesArray) {
-                JSONObject jsonRule = (JSONObject) o;
-                rules.add(new Rule(jsonRule));
-            }
-        }
-        if (json.containsKey("libraries")) {
-            JSONArray libs = (JSONArray) json.get("libraries");
-            for (int i = 0; i < libs.size(); ++i) {
-                libraries.add(new Library((JSONObject) libs.get(i)));
-            }
-        }
-        if (json.containsKey("incompatibilityReason"))
-            incompatibilityReason = json.get("incompatibilityReason").toString();
-        if (json.containsKey("inheritsFrom")) {
-            inheritsFrom = json.get("inheritsFrom").toString();
-            needsInheritance = true;
-        } else
-            needsInheritance = false;
-    }
+	MCDownloadVersion(JSONObject json) {
+		this.json = json;
+		id = json.get("id").toString();
+		if (json.containsKey("jar")) {
+			jarVersion = json.get("jar").toString();
+		} else {
+			jarVersion = id;
+		}
+		time = json.get("time").toString();
+		releaseTime = json.get("releaseTime").toString();
+		type = json.get("type").toString();
+		if (json.containsKey("processArguments"))
+			processArgs = json.get("processArguments").toString();
+		minecraftArgs = json.get("minecraftArguments").toString();
+		minimumLauncherVersion = (int) Double.valueOf(json.get("minimumLauncherVersion").toString()).doubleValue();
+		mainClass = json.get("mainClass").toString();
+		if (json.containsKey("assets"))
+			assets = json.get("assets").toString();
+		else
+			assets = DEFAULT_ASSETS_INDEX;
+		if (json.containsKey("rules")) {
+			JSONArray rulesArray = (JSONArray) json.get("rules");
+			for (Object o : rulesArray) {
+				JSONObject jsonRule = (JSONObject) o;
+				rules.add(new Rule(jsonRule));
+			}
+		}
+		if (json.containsKey("libraries")) {
+			JSONArray libs = (JSONArray) json.get("libraries");
+			for (int i = 0; i < libs.size(); ++i) {
+				libraries.add(new Library((JSONObject) libs.get(i)));
+			}
+		}
+		if (json.containsKey("incompatibilityReason"))
+			incompatibilityReason = json.get("incompatibilityReason").toString();
+		if (json.containsKey("inheritsFrom")) {
+			inheritsFrom = json.get("inheritsFrom").toString();
+			needsInheritance = true;
+		} else
+			needsInheritance = false;
+	}
 
-    @Override
-    public int compareTo(IVersion arg0) {
-        return getId().compareTo(arg0.getId());
-    }
+	@Override
+	public int compareTo(IVersion arg0) {
+		return getId().compareTo(arg0.getId());
+	}
 
-    @Override
-    public String getDisplayName() {
-        return type.concat(" ").concat(id);
-    }
+	@Override
+	public String getDisplayName() {
+		return type.concat(" ").concat(id);
+	}
 
-    @Override
-    public String getId() {
-        return id;
-    }
+	@Override
+	public String getId() {
+		return id;
+	}
 
-    @Override
-    public String getUniqueID() {
-        return type.charAt(0) + getId();
-    }
+	void setId(String id) {
+		json.replace("id", id);
+		this.id = id;
+	}
 
-    String getTime() {
-        return time;
-    }
+	@Override
+	public String getUniqueID() {
+		return type.charAt(0) + getId();
+	}
 
-    String getReleaseTime() {
-        return releaseTime;
-    }
+	String getTime() {
+		return time;
+	}
 
-    String getType() {
-        return type;
-    }
+	String getReleaseTime() {
+		return releaseTime;
+	}
 
-    String getProcessArgs() {
-        return processArgs;
-    }
+	String getType() {
+		return type;
+	}
 
-    String getMinecraftArgs() {
-        return minecraftArgs;
-    }
+	String getProcessArgs() {
+		return processArgs;
+	}
 
-    int getMinimumLauncherVersion() {
-        return minimumLauncherVersion;
-    }
+	String getMinecraftArgs() {
+		return minecraftArgs;
+	}
 
-    String getMainClass() {
-        return mainClass;
-    }
+	int getMinimumLauncherVersion() {
+		return minimumLauncherVersion;
+	}
 
-    String getInheritsFrom(){ return inheritsFrom; }
+	String getMainClass() {
+		return mainClass;
+	}
 
-    @Override
-    public String getIncompatibilityReason() {
-        return incompatibilityReason;
-    }
+	String getInheritsFrom() {
+		return inheritsFrom;
+	}
 
-    @Override
-    public IVersionInstaller getInstaller() {
-        return installer;
-    }
+	@Override
+	public String getIncompatibilityReason() {
+		return incompatibilityReason;
+	}
 
-    @Override
-    public IVersionLauncher getLauncher() {
-        return launcher;
-    }
+	@Override
+	public IVersionInstaller getInstaller() {
+		return installer;
+	}
 
-    List<Library> getLibraries() {
-        return libraries;
-    }
+	@Override
+	public IVersionLauncher getLauncher() {
+		return launcher;
+	}
 
-    /**
-     *
-     * @return True if this version is compatible with our current operating system
-     */
-    public boolean isCompatible() {
-        Action action = null;
-        for (Rule rule : rules) {
-            if (rule.applies())
-                action = rule.getAction();
-        }
-        return rules.isEmpty() || action == Action.ALLOW;
-    }
+	List<Library> getLibraries() {
+		return libraries;
+	}
 
-    @Override
-    public JSONObject toJSON() {
-        return json;
-    }
+	/**
+	 *
+	 * @return True if this version is compatible with our current operating
+	 *         system
+	 */
+	public boolean isCompatible() {
+		Action action = null;
+		for (Rule rule : rules) {
+			if (rule.applies())
+				action = rule.getAction();
+		}
+		return rules.isEmpty() || action == Action.ALLOW;
+	}
 
-    String getAssetsIndexName() {
-        return assets;
-    }
+	@Override
+	public JSONObject toJSON() {
+		return json;
+	}
 
-    boolean needsInheritance(){ return needsInheritance; }
+	String getAssetsIndexName() {
+		return assets;
+	}
 
-    String getJarVersion(){
-        return jarVersion;
-    }
+	boolean needsInheritance() {
+		return needsInheritance;
+	}
 
-    void doInherit(MCDownloadVersion parent) {
-        MCLauncherAPI.log.finer("Inheriting version ".concat(id).concat(" from ").concat(parent.getId()));
-        if(!parent.getId().equals(getInheritsFrom())){
-            throw new IllegalArgumentException("Wrong inheritance version passed!");
-        }
+	String getJarVersion() {
+		if (isForge()) {
+			return inheritsFrom;
+		}
+		return jarVersion;
+	}
 
-        if(minecraftArgs == null)
-            minecraftArgs = parent.getMinecraftArgs();
+	void doInherit(MCDownloadVersion parent) {
+		MCLauncherAPI.log.finer("Inheriting version ".concat(id).concat(" from ").concat(parent.getId()));
+		if (!parent.getId().equals(getInheritsFrom())) {
+			throw new IllegalArgumentException("Wrong inheritance version passed!");
+		}
 
-        if(mainClass == null)
-            mainClass = parent.getMainClass();
+		if (minecraftArgs == null)
+			minecraftArgs = parent.getMinecraftArgs();
 
-        if(incompatibilityReason == null)
-            incompatibilityReason = parent.getIncompatibilityReason();
+		if (mainClass == null)
+			mainClass = parent.getMainClass();
 
-        if(assets == null)
-            assets = parent.getAssetsIndexName();
+		if (incompatibilityReason == null)
+			incompatibilityReason = parent.getIncompatibilityReason();
 
-        libraries.addAll(parent.getLibraries());
-        rules.addAll(parent.rules);
+		if (assets == null)
+			assets = parent.getAssetsIndexName();
 
+		libraries.addAll(parent.getLibraries());
+		rules.addAll(parent.rules);
 
-        if(jarVersion == null || jarVersion.isEmpty()){
-            jarVersion = parent.getJarVersion();
-        }
+		if (jarVersion == null || jarVersion.isEmpty()) {
+			jarVersion = parent.getJarVersion();
+		}
 
-        if(rules.isEmpty())
-            rules.addAll(parent.rules);
+		if (rules.isEmpty())
+			rules.addAll(parent.rules);
 
-        needsInheritance = false;
-        MCLauncherAPI.log.finer("Inheriting version ".concat(id).concat(" finished."));
-    }
+		needsInheritance = false;
+		MCLauncherAPI.log.finer("Inheriting version ".concat(id).concat(" finished."));
+	}
+
+	@Override
+	public boolean isForge() {
+		return forge;
+	}
+
+	void setForge(boolean forge) {
+		this.forge = forge;
+		if (json.containsKey("forge")) {
+			json.replace("forge", forge);
+		} else {
+			json.put("forge", forge);
+		}
+	}
 }

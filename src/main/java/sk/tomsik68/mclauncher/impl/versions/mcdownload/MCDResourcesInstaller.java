@@ -39,9 +39,7 @@ final class MCDResourcesInstaller {
         if (!indexDest.exists() || indexDest.length() == 0)
             FileUtils.downloadFileWithProgress(indexDownloadURL, indexDest, progress);
         // parse it from JSON
-        FileReader fileReader = new FileReader(indexDest);
-        JSONObject jsonAssets = (JSONObject) JSONValue.parse(fileReader);
-        fileReader.close();
+        JSONObject jsonAssets = (JSONObject) JSONValue.parse(new FileReader(indexDest));
         AssetIndex assets = new AssetIndex(index, jsonAssets);
         // and download individual assets inside it
         downloadAssetList(assets, progress);
