@@ -34,3 +34,6 @@
 /build/
 /.gradle/
 /build.gradle.idea/
+/.settings/
+/.classpath
+/.project
