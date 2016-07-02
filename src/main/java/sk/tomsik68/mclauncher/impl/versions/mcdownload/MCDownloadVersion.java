@@ -18,7 +18,8 @@ final class MCDownloadVersion implements IVersion, IJSONSerializable {
     private static final String DEFAULT_ASSETS_INDEX = "legacy";
 
     private String id, time, releaseTime, type, minecraftArgs, mainClass, jarVersion;
-    private int minimumLauncherVersion;
+    private double minimumLauncherVersion;
+    private boolean forge;
     private final JSONObject json;
     private String incompatibilityReason, processArgs, assets, inheritsFrom;
     private ArrayList<Rule> rules = new ArrayList<Rule>();
@@ -40,7 +41,11 @@ final class MCDownloadVersion implements IVersion, IJSONSerializable {
         if (json.containsKey("processArguments"))
             processArgs = json.get("processArguments").toString();
         minecraftArgs = json.get("minecraftArguments").toString();
-        minimumLauncherVersion = Integer.parseInt(json.get("minimumLauncherVersion").toString());
+        if(json.containsKey("minimumLauncherVersion")){
+            minimumLauncherVersion = Double.parseDouble(json.get("minimumLauncherVersion").toString());
+        } else {
+        	minimumLauncherVersion = 18.0;
+        }
         mainClass = json.get("mainClass").toString();
         if (json.containsKey("assets"))
             assets = json.get("assets").toString();
@@ -82,7 +87,12 @@ final class MCDownloadVersion implements IVersion, IJSONSerializable {
     public String getId() {
         return id;
     }
-
+    
+    void setId(String id){
+    	json.replace("id", id);
+    	this.id = id;
+    }
+    
     @Override
     public String getUniqueID() {
         return type.charAt(0) + getId();
@@ -108,7 +118,7 @@ final class MCDownloadVersion implements IVersion, IJSONSerializable {
         return minecraftArgs;
     }
 
-    int getMinimumLauncherVersion() {
+    double getMinimumLauncherVersion() {
         return minimumLauncherVersion;
     }
 
@@ -162,6 +172,9 @@ final class MCDownloadVersion implements IVersion, IJSONSerializable {
     boolean needsInheritance(){ return needsInheritance; }
 
     String getJarVersion(){
+    	if(isForge()){
+    		return inheritsFrom;
+    	}
         return jarVersion;
     }
 
@@ -197,4 +210,18 @@ final class MCDownloadVersion implements IVersion, IJSONSerializable {
         needsInheritance = false;
         MCLauncherAPI.log.finer("Inheriting version ".concat(id).concat(" finished."));
     }
+
+	@Override
+	public boolean isForge() {
+		return forge;
+	}
+	
+	void setForge(boolean bol){
+		this.forge = bol;
+		if (json.containsKey("forge")) {
+			json.replace("forge", forge);
+		} else {
+			json.put("forge", forge);
+		}
+	}
 }

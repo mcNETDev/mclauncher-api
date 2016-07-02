@@ -40,4 +40,9 @@ public interface IVersion extends Comparable<IVersion> {
      * @return Reason why it isn't compatible with specified runtime
      */
     public String getIncompatibilityReason();
+    
+    /**
+     * @return True if the version is a forge version.
+     */
+    public boolean isForge();
 }

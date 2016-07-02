@@ -57,4 +57,9 @@ final class MCAssetsVersion implements IVersion {
         return null;
     }
 
+	@Override
+	public boolean isForge() {
+		return false;
+	}
+
 }

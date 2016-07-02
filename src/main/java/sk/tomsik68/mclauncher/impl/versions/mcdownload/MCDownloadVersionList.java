@@ -16,7 +16,7 @@ import sk.tomsik68.mclauncher.impl.common.Platform;
 public final class MCDownloadVersionList extends Observable<String> implements IVersionList, IObserver<String> {
     private final MCDownloadLocalVersionList localVersionList;
     private final MCDownloadOnlineVersionList onlineVersionList;
-
+    private final MCDownloadOnlineForgeVersionList forgeVersionList;
     /**
      * Creates new MCDownloadVersionList which fetches local JSON files
      * from given minecraft instance
@@ -25,24 +25,34 @@ public final class MCDownloadVersionList extends Observable<String> implements I
     public MCDownloadVersionList(MinecraftInstance mc) {
         onlineVersionList = new MCDownloadOnlineVersionList();
         localVersionList = new MCDownloadLocalVersionList(mc);
-
+        forgeVersionList = new MCDownloadOnlineForgeVersionList();
+        
         onlineVersionList.addObserver(this);
         localVersionList.addObserver(this);
+        forgeVersionList.addObserver(this);
     }
 
     @Override
     public void startDownload() throws Exception {
         localVersionList.startDownload();
         onlineVersionList.startDownload();
+        forgeVersionList.startDownload();
     }
 
     @Override
     public IVersion retrieveVersionInfo(String id) throws Exception {
         IVersion result;
         result = localVersionList.retrieveVersionInfo(id);
-        if (result == null)
-            result = onlineVersionList.retrieveVersionInfo(id);
-
+        if (result == null){
+        	try{
+        		result = onlineVersionList.retrieveVersionInfo(id);
+        	} catch (Exception e) {
+        		//Ignore when its a Forge Version
+        	}
+        }
+        if(result == null){
+        		result = forgeVersionList.retrieveVersionInfo(id);
+        }
         if(result != null)
             resolveInheritance((MCDownloadVersion)result);
         return result;
@@ -50,7 +60,11 @@ public final class MCDownloadVersionList extends Observable<String> implements I
 
     @Override
     public LatestVersionInformation getLatestVersionInformation() throws Exception {
-        return onlineVersionList.getLatestVersionInformation();
+    	LatestVersionInformation info = onlineVersionList.getLatestVersionInformation();
+    	if(info == null){
+    		info = forgeVersionList.getLatestVersionInformation();
+    	}
+        return info;
     }
 
     void resolveInheritance(MCDownloadVersion version) throws Exception {

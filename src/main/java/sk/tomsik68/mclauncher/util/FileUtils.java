@@ -5,9 +5,16 @@ import sk.tomsik68.mclauncher.api.ui.IProgressMonitor;
 import java.io.*;
 import java.math.BigInteger;
 import java.net.HttpURLConnection;
+import java.net.JarURLConnection;
 import java.net.URL;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
+import java.util.Arrays;
+import java.util.jar.JarEntry;
+import java.util.jar.JarOutputStream;
+import java.util.jar.Pack200;
+
+import org.tukaani.xz.XZInputStream;
 
 public final class FileUtils {
     public static void createFileSafely(File file) throws Exception {
@@ -108,5 +115,69 @@ public final class FileUtils {
         }
 
         return String.format("%1$032x", new BigInteger(1, stream.getMessageDigest().digest()));
+    }
+
+    public static InputStream getStreamFromFileWithinJar(File jar, String fileInJar) throws IOException {
+		String inputFile = "jar:file:/" + jar.getAbsolutePath().replaceAll("\\\\", "/") + "!/"
+				+ fileInJar.replaceAll("\\\\", "/");
+		URL u = new URL(inputFile);
+		JarURLConnection conn = (JarURLConnection) u.openConnection();
+		InputStream is = conn.getInputStream();
+		return is;
+}
+
+    public static void downloadAndUnpackFileWithProgress(String url, File dest, IProgressMonitor p) throws Exception {
+		String urlWithPack = url.concat(".pack.xz");
+		File f = File.createTempFile(dest.getName(), ".pack.xz");
+		downloadFileWithProgress(urlWithPack, f, p);
+		byte[] file = readFully(new FileInputStream(f));
+		byte[] decompressed = FileUtils.readFully(new XZInputStream(new ByteArrayInputStream(file)));
+
+		String end = new String(decompressed, decompressed.length - 4, 4);
+		if (!end.equals("SIGN")) {
+			System.out.println("Unpacking failed, signature missing " + end);
+			return;
+		}
+		int x = decompressed.length;
+		int len = ((decompressed[x - 8] & 0xFF)) | ((decompressed[x - 7] & 0xFF) << 8) | ((decompressed[x - 6] & 0xFF) << 16) | ((decompressed[x - 5] & 0xFF) << 24);
+		File temp = File.createTempFile("art", ".pack");
+
+		byte[] checksums = Arrays.copyOfRange(decompressed, decompressed.length - len - 8, decompressed.length - 8);
+		OutputStream out = new FileOutputStream(temp);
+		out.write(decompressed, 0, decompressed.length - len - 8);
+		out.close();
+		decompressed = null;
+		file = null;
+		System.gc();
+
+		FileOutputStream jarBytes = new FileOutputStream(dest);
+		JarOutputStream jos = new JarOutputStream(jarBytes);
+
+		Pack200.newUnpacker().unpack(temp, jos);
+
+		JarEntry checksumsFile = new JarEntry("checksums.sha1");
+		checksumsFile.setTime(0);
+		jos.putNextEntry(checksumsFile);
+		jos.write(checksums);
+		jos.closeEntry();
+
+		jos.close();
+		jarBytes.close();
+		temp.delete();
+		f.delete();
+    }
+    
+    public static byte[] readFully(InputStream stream) throws IOException {
+		byte[] data = new byte[4096];
+		ByteArrayOutputStream entryBuffer = new ByteArrayOutputStream();
+		int len;
+		do {
+			len = stream.read(data);
+			if (len > 0) {
+				entryBuffer.write(data, 0, len);
+			}
+		} while (len != -1);
+
+		return entryBuffer.toByteArray();
     }
 }

@@ -20,7 +20,8 @@ import java.util.logging.Logger;
 final class MCDownloadVersionInstaller implements IVersionInstaller {
     private final ArrayList<IVersionInstallListener> listeners = new ArrayList<IVersionInstallListener>();
     private static final String JAR_DOWNLOAD_URL = "https://s3.amazonaws.com/Minecraft.Download/versions/<VERSION>/<VERSION>.jar";
-
+    private static final String JAR_FORGE_DOWNLOAD_URL = MCDownloadOnlineForgeVersionList.FORGE_UNIVERSAL;
+    
     public MCDownloadVersionInstaller(){
 
     }
@@ -82,8 +83,12 @@ final class MCDownloadVersionInstaller implements IVersionInstaller {
                     try {
                         downloadLibrary(lib.getDownloadURL(), libraryProvider.getLibraryFile(lib), progress);
                     } catch (Exception e) {
-                        e.printStackTrace();
-                        log.finest("Failed to install " + lib.getName());
+                    	try {
+                    		downloadAndUnpack(lib.getDownloadURL(), libraryProvider.getLibraryFile(lib), progress);
+                    	} catch (Exception e2) {
+                    		e2.printStackTrace();
+                    		log.finest("Failed to install " + lib.getName());
+                    	}
                     }
                 }
                 // if library has natives, it needs to be extracted...
@@ -134,7 +139,13 @@ final class MCDownloadVersionInstaller implements IVersionInstaller {
             if(haveProgress)
                 progress.setStatus("Downloading Game Jar...");
             try {
-                FileUtils.downloadFileWithProgress(JAR_DOWNLOAD_URL.replace("<VERSION>", version.getId()), jarDest, progress);
+            	String url;
+            	if (v.isForge()) {
+            		url = JAR_FORGE_DOWNLOAD_URL.replaceAll("<VERSION>", version.getId());
+            	} else {
+            		url = JAR_DOWNLOAD_URL.replace("<VERSION>", version.getId());
+            	}
+                FileUtils.downloadFileWithProgress(url, jarDest, progress);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -142,7 +153,9 @@ final class MCDownloadVersionInstaller implements IVersionInstaller {
         // notify listeners that installation is finished
         notifyListeners(version);
     }
-
+    private void downloadAndUnpack(String url, File dest, IProgressMonitor p) throws Exception {
+    	FileUtils.downloadAndUnpackFileWithProgress(url, dest, p);
+    }
     private void updateResources(MinecraftInstance mc, MCDownloadVersion version, IProgressMonitor progress) throws Exception {
         MCDResourcesInstaller resInstaller = new MCDResourcesInstaller(mc);
         resInstaller.installAssetsForVersion(version, progress);
